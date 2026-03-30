@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProPulse — Gestión operativa</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --accent:#1a6b4a;--accent-mid:#2d9e72;--accent-light:#e8f5ef;
+    --bg:#f7f8f6;--surface:#ffffff;--surface2:#f3f4f2;--surface3:#eaebe8;
+    --border:#e2e4df;--border2:#d0d2cc;
+    --text:#1a1c18;--text2:#5a5f52;--text3:#9ea398;
+    --danger:#c0392b;--warn:#d97706;--info:#2563eb;
+    --shadow:0 1px 3px rgba(0,0,0,0.08);
+    --radius:10px;--radius-sm:6px;--radius-lg:14px;
+  }
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+  .app{display:flex;flex-direction:column;min-height:100vh}
+
+  /* LOGIN */
+  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+  .login-wrap{width:100%;max-width:380px}
+  .login-logo{text-align:center;margin-bottom:32px}
+  .login-logo .wordmark{font-size:32px;font-weight:600;letter-spacing:-1px;color:var(--text)}
+  .login-logo .wordmark span{color:var(--accent-mid)}
+  .login-logo p{font-size:13px;color:var(--text3);margin-top:6px}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow)}
+  .login-card h2{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:16px}
+  .user-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:none;cursor:pointer;margin-bottom:10px;text-align:left;transition:all 0.15s;font-family:inherit}
+  .user-btn:hover{background:var(--accent-light);border-color:var(--accent-mid)}
+  .user-btn .uname{font-size:14px;font-weight:500;color:var(--text)}
+  .user-btn .urole{font-size:12px;color:var(--text3)}
+  .login-note{text-align:center;font-size:11px;color:var(--text3);margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+  /* TOPBAR */
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:50}
+  .topbar-logo{font-size:17px;font-weight:600;letter-spacing:-0.5px;color:var(--text)}
+  .topbar-logo span{color:var(--accent-mid)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .user-chip{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border-radius:20px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all 0.15s}
+  .user-chip:hover{background:var(--surface2)}
+  .user-chip .uname{font-size:12px;font-weight:500}
+  .ava{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+  .ava-lg{width:38px;height:38px;font-size:14px}
+
+  /* NAV */
+  .nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 12px}
+  .nav::-webkit-scrollbar{display:none}
+  .nav-btn{padding:12px 14px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.15s;font-family:inherit;display:flex;align-items:center;gap:6px}
+  .nav-btn .nav-ico{font-size:14px}
+  .nav-btn.active{color:var(--accent-mid);border-bottom-color:var(--accent-mid)}
+  .nav-btn:hover:not(.active){color:var(--text);background:var(--surface2)}
+
+  /* CONTENT */
+  .content{flex:1;padding:24px 20px;max-width:1140px;width:100%;margin:0 auto}
+  .page{display:none}.page.active{display:block}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+  .page-title{font-size:18px;font-weight:600;letter-spacing:-0.3px}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow)}
+  .card-title{font-size:14px;font-weight:600;margin-bottom:14px}
+
+  /* GRIDS */
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+
+  /* METRICS */
+  .metric{background:var(--surface2);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border)}
+  .metric-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+  .metric-val{font-size:24px;font-weight:600;color:var(--text);letter-spacing:-0.5px}
+  .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+  /* BUTTONS */
+  .btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:13px;font-weight:500;color:var(--text);transition:all 0.15s;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--surface2);border-color:var(--border2)}
+  .btn:active{transform:scale(0.98)}
+  .btn.primary{background:var(--accent-mid);color:#fff;border-color:var(--accent-mid)}
+  .btn.primary:hover{background:var(--accent)}
+  .btn.danger{background:#fef2f2;color:var(--danger);border-color:#fecaca}
+  .btn.danger:hover{background:#fee2e2}
+  .btn.sm{padding:5px 11px;font-size:12px}
+  .btn.xs{padding:3px 8px;font-size:11px}
+  .btn.ghost{border-color:transparent;background:none}
+  .btn.ghost:hover{background:var(--surface2);border-color:var(--border)}
+
+  /* FORMS */
+  input,select,textarea{padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;width:100%;background:var(--surface);color:var(--text);font-family:inherit;transition:border 0.15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-mid);box-shadow:0 0 0 3px rgba(45,158,114,0.1)}
+  textarea{resize:vertical;min-height:72px}
+  label{font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px}
+  .form-row{margin-bottom:13px}
+  .form-row:last-child{margin-bottom:0}
+  .row{display:flex;gap:10px;align-items:center}
+
+  /* TAGS */
+  .tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;line-height:1}
+  .tag.green{background:#dcfce7;color:#15803d}
+  .tag.blue{background:#dbeafe;color:#1d4ed8}
+  .tag.amber{background:#fef3c7;color:#92400e}
+  .tag.red{background:#fee2e2;color:#991b1b}
+  .tag.gray{background:var(--surface3);color:var(--text2)}
+  .tag.purple{background:#ede9fe;color:#6d28d9}
+  .tag.teal{background:#ccfbf1;color:#0f766e}
+
+  /* CHIPS */
+  .chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .chip.admin{background:#ede9fe;color:#5b21b6}
+  .chip.user{background:#dbeafe;color:#1e40af}
+
+  /* DIVIDER */
+  hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+
+  /* TABLE */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+  th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--surface2)}
+
+  /* PROGRESS */
+  .progress-bar{height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:7px}
+  .progress-fill{height:100%;background:var(--accent-mid);border-radius:4px;transition:width 0.4s}
+
+  /* CLIENT PILL */
+  .client-pill{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);transition:border-color 0.15s}
+  .client-pill:hover{border-color:var(--border2)}
+
+  /* TIMER */
+  .timer-display{font-family:'DM Mono',monospace;font-size:48px;font-weight:500;color:var(--text);text-align:center;padding:28px 0;letter-spacing:2px;transition:color 0.3s}
+  .timer-running .timer-display{color:var(--accent-mid)}
+
+  /* IDEAS */
+  .ideas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .idea-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:11px;box-shadow:var(--shadow);transition:border-color 0.15s,box-shadow 0.15s}
+  .idea-card:hover{border-color:var(--border2);box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+  .idea-card.top-idea{border-left:3px solid var(--accent-mid)}
+  .idea-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .idea-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.4}
+  .idea-desc{font-size:12px;color:var(--text2);line-height:1.6}
+  .score-wrap{display:flex;flex-direction:column;align-items:center;min-width:46px}
+  .score-circle{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;border:2px solid;flex-shrink:0}
+  .score-hi{background:#dcfce7;color:#15803d;border-color:#86efac}
+  .score-mid{background:#fef9c3;color:#854d0e;border-color:#fde047}
+  .score-lo{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+  .score-lbl{font-size:10px;color:var(--text3);margin-top:3px}
+  .idea-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .idea-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+  .star-row{display:flex;gap:2px}
+  .star{font-size:15px;cursor:pointer;color:#f59e0b;opacity:0.2;transition:opacity 0.1s;line-height:1}
+  .star.on{opacity:1}
+  .resource-tag{display:inline-flex;padding:2px 8px;border-radius:4px;font-size:11px;background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+  .promote-btn{font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid #86efac;background:#dcfce7;color:#15803d;cursor:pointer;font-weight:600;font-family:inherit;transition:all 0.15s}
+  .promote-btn:hover{background:#bbf7d0}
+  .idea-actions{display:flex;gap:6px;align-items:center}
+
+  /* FILTERS */
+  .filters-bar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .filter-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text2);transition:all 0.15s;font-family:inherit}
+  .filter-chip.active{background:var(--accent-mid);color:#fff;border-color:var(--accent-mid)}
+  .filter-chip:hover:not(.active){background:var(--surface2)}
+  .sort-sel{padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text);cursor:pointer;width:auto;font-family:inherit}
+
+  /* TRELLO */
+  .trello-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px}
+  .trello-board::-webkit-scrollbar{height:6px}
+  .trello-board::-webkit-scrollbar-track{background:var(--surface3);border-radius:4px}
+  .trello-board::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+  .trello-col{min-width:230px;max-width:250px;flex-shrink:0}
+  .trello-col-head{font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;color:var(--text2)}
+  .trello-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;margin-bottom:8px;cursor:grab;font-size:13px;box-shadow:var(--shadow);transition:box-shadow 0.15s}
+  .trello-card:hover{box-shadow:0 3px 8px rgba(0,0,0,0.1)}
+  .trello-card:active{cursor:grabbing;opacity:0.75}
+  .trello-card-title{font-weight:500;margin-bottom:7px;line-height:1.4}
+  .trello-card-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .add-card-btn{width:100%;padding:8px;border:1px dashed var(--border2);border-radius:var(--radius-sm);background:none;cursor:pointer;font-size:12px;color:var(--text3);text-align:left;font-family:inherit;transition:all 0.15s}
+  .add-card-btn:hover{background:var(--surface2);color:var(--text2);border-color:var(--accent-mid)}
+  .col-drop-zone{min-height:8px}
+
+  /* MODALS */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:flex-start;justify-content:center;z-index:200;padding:40px 16px;overflow-y:auto;backdrop-filter:blur(2px)}
+  .modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:480px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:auto}
+  .modal h3{font-size:15px;font-weight:600;margin-bottom:18px;letter-spacing:-0.2px}
+  .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+
+  /* EMPTY STATE */
+  .empty{text-align:center;padding:48px 20px;color:var(--text3)}
+  .empty-ico{font-size:40px;margin-bottom:12px;display:block}
+  .empty p{font-size:13px;line-height:1.6}
+
+  /* BADGE */
+  .badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:600;background:var(--surface3);color:var(--text2)}
+
+  /* EXPORT PAGE */
+  .steps-list{counter-reset:step}
+  .step{display:flex;gap:12px;margin-bottom:14px;counter-increment:step}
+  .step::before{content:counter(step);display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent-light);color:var(--accent-mid);font-size:12px;font-weight:600;flex-shrink:0;margin-top:1px}
+  .step p{font-size:13px;color:var(--text2);line-height:1.6}
+  .step p strong{color:var(--text);font-weight:600}
+  code{font-family:'DM Mono',monospace;font-size:12px;background:var(--surface3);padding:2px 6px;border-radius:4px;color:var(--accent)}
+
+  .hidden{display:none!important}
+  @media(max-width:600px){
+    .content{padding:16px 12px}
+    .topbar{padding:0 14px}
+    .grid4{grid-template-columns:repeat(2,1fr)}
+    .modal{padding:18px}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="wordmark">Pro<span>Pulse</span></div>
+      <p>Plataforma de gestión operativa y proyectos</p>
+    </div>
+    <div class="login-card">
+      <h2>Seleccioná tu usuario</h2>
+      <div id="userList"></div>
+      <p class="login-note">En producción: autenticación con Google OAuth 2.0</p>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="mainApp" class="app hidden">
+  <div class="topbar">
+    <div class="topbar-logo">Pro<span>Pulse</span></div>
+    <div class="topbar-right">
+      <div class="user-chip" onclick="logout()" title="Cerrar sesión">
+        <div id="currentAvatar" class="ava"></div>
+        <span id="currentUserName" class="uname"></span>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('dashboard',this)"><span class="nav-ico">⬛</span>Dashboard</button>
+    <button class="nav-btn" onclick="showPage('ideas',this)"><span class="nav-ico">💡</span>Ideas</button>
+    <button class="nav-btn" onclick="showPage('timer',this)"><span class="nav-ico">⏱</span>Cronómetro</button>
+    <button class="nav-btn" onclick="showPage('clients',this)"><span class="nav-ico">👤</span>Clientes</button>
+    <button class="nav-btn" onclick="showPage('billing',this)"><span class="nav-ico">💰</span>Facturación</button>
+    <button class="nav-btn" onclick="showPage('trello',this)"><span class="nav-ico">📋</span>Tablero</button>
+    <button class="nav-btn" onclick="showPage('export',this)"><span class="nav-ico">📤</span>Exportar</button>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header"><div class="page-title">Resumen del mes</div></div>
+      <div class="grid4" style="margin-bottom:18px" id="dashMetrics"></div>
+      <div class="grid2">
+        <div class="card"><div class="card-title">Mis registros recientes</div><div id="recentLogs"></div></div>
+        <div class="card"><div class="card-title">Top ideas activas</div><div id="dashIdeas"></div></div>
+      </div>
+    </div>
+
+    <!-- IDEAS -->
+    <div id="page-ideas" class="page">
+      <div class="page-header">
+        <div class="page-title">Ideas y unidades de negocio</div>
+        <button class="btn primary" onclick="openIdeaModal()">+ Nueva idea</button>
+      </div>
+      <div class="filters-bar">
+        <button class="filter-chip active" onclick="filterIdeas('all',this)">Todas</button>
+        <button class="filter-chip" onclick="filterIdeas('idea',this)">Idea</button>
+        <button class="filter-chip" onclick="filterIdeas('validando',this)">Validando</button>
+        <button class="filter-chip" onclick="filterIdeas('activa',this)">Activa</button>
+        <button class="filter-chip" onclick="filterIdeas('pausada',this)">Pausada</button>
+        <select class="sort-sel" id="ideaSort" onchange="renderIdeas()">
+          <option value="score">Puntaje ↓</option>
+          <option value="name">Nombre A–Z</option>
+          <option value="date">Más recientes</option>
+        </select>
+      </div>
+      <div class="ideas-grid" id="ideasGrid"></div>
+    </div>
+
+    <!-- TIMER -->
+    <div id="page-timer" class="page">
+      <div class="page-header"><div class="page-title">Registrar horas</div></div>
+      <div class="grid2">
+        <div class="card" id="timerCard">
+          <div class="form-row">
+            <label>Cliente</label>
+            <select id="timerClient"><option value="">— Seleccionar cliente —</option></select>
+          </div>
+          <div class="form-row">
+            <label>Descripción de la tarea</label>
+            <input type="text" id="timerDesc" placeholder="Ej: Soporte técnico, reunión, deploy...">
+          </div>
+          <div class="timer-display" id="timerDisplay">00:00:00</div>
+          <div class="row" style="justify-content:center;gap:10px;margin-bottom:18px">
+            <button class="btn primary" id="timerStartBtn" onclick="toggleTimer()">▶ Iniciar</button>
+            <button class="btn" onclick="resetTimer()">↺ Reiniciar</button>
+          </div>
+          <hr>
+          <div class="card-title" style="margin-bottom:12px">Carga manual</div>
+          <div class="row">
+            <div style="flex:1"><label>Horas</label><input type="number" id="manualHours" placeholder="0" min="0" step="0.5"></div>
+            <div style="flex:1"><label>Minutos</label><input type="number" id="manualMins" placeholder="0" min="0" max="59"></div>
+            <div style="padding-top:20px"><button class="btn primary sm" onclick="saveManual()">Guardar</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Registros del mes</div>
+          <div class="table-wrap" id="timerLogs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div id="page-clients" class="page">
+      <div class="page-header">
+        <div class="page-title">Clientes</div>
+        <button class="btn primary" onclick="openClientModal()">+ Nuevo cliente</button>
+      </div>
+      <div id="clientsList"></div>
+    </div>
+
+    <!-- BILLING -->
+    <div id="page-billing" class="page">
+      <div class="page-header"><div class="page-title">Facturación mensual</div></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Por horas (soporte)</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Cliente</th><th>Horas</th><th>Tarifa</th><th>Total</th><th>Estado</th></tr></thead>
+          <tbody id="billingHSTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Por proyecto (mensual fijo)</div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Cliente</th><th>Proyecto</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody id="billingProjTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- TRELLO -->
+    <div id="page-trello" class="page">
+      <div class="page-header">
+        <div class="page-title">Tablero de actividades</div>
+        <button class="btn primary" onclick="openCardModal()">+ Nueva tarjeta</button>
+      </div>
+      <div class="trello-board" id="trelloBoard"></div>
+    </div>
+
+    <!-- EXPORT -->
+    <div id="page-export" class="page">
+      <div class="page-header"><div class="page-title">Exportar a Google Sheets</div></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Exportar CSV</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Descargá los datos para importar manualmente en Google Sheets.</p>
+          <div class="form-row">
+            <label>Qué exportar</label>
+            <select id="exportSheet">
+              <option value="logs">Registros de horas</option>
+              <option value="clients">Clientes</option>
+              <option value="ideas">Ideas</option>
+              <option value="all">Todo (3 archivos)</option>
+            </select>
+          </div>
+          <button class="btn primary" onclick="exportCSV()" style="width:100%;margin-top:6px">↓ Descargar CSV</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Conectar Google Sheets (API)</div>
+          <div class="steps-list">
+            <div class="step"><p>Crear proyecto en <strong>Google Cloud Console</strong></p></div>
+            <div class="step"><p>Habilitar <strong>Sheets API</strong> y <strong>Drive API</strong></p></div>
+            <div class="step"><p>Crear <strong>OAuth 2.0 Client ID</strong> y pegarlo abajo</p></div>
+            <div class="step"><p>En el Sheet: <strong>Extensiones → Apps Script</strong>, pegar el código del backend y publicar como <strong>Web App</strong></p></div>
+            <div class="step"><p>Pegar la <strong>URL del Web App</strong> abajo y guardar</p></div>
+          </div>
+          <hr>
+          <div class="form-row"><label>URL del Web App (Apps Script)</label><input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="form-row"><label>ID del Google Sheet</label><input type="text" id="sheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUq..."></div>
+          <div class="row" style="gap:8px">
+            <button class="btn primary" onclick="saveSheetConfig()" style="flex:1">Guardar configuración</button>
+            <button class="btn" onclick="testConnection()">Probar</button>
+          </div>
+          <div id="connectionStatus" style="margin-top:10px;font-size:12px"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- IDEA MODAL -->
+<div id="ideaModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3 id="ideaModalTitle">Nueva idea</h3>
+    <div class="form-row"><label>Nombre / título</label><input type="text" id="iName" placeholder="Ej: Plataforma de cursos online"></div>
+    <div class="form-row"><label>Descripción</label><textarea id="iDesc" placeholder="¿Qué problema resuelve? ¿A quién va dirigida?"></textarea></div>
+    <div class="row" style="gap:10px">
+      <div class="form-row" style="flex:1"><label>Estado</label>
+        <select id="iStatus">
+          <option value="idea">Idea</option><option value="validando">Validando</option>
+          <option value="activa">Activa</option><option value="pausada">Pausada</option>
+        </select>
+      </div>
+      <div class="form-row" style="flex:1"><label>Responsable</label><select id="iOwner"></select></div>
+    </div>
+    <div class="form-row"><label>Recursos necesarios <span style="font-weight:400;color:var(--text3)">(separados por coma)</span></label>
+      <input type="text" id="iResources" placeholder="Ej: Diseñador UX, $800, servidor cloud">
+    </div>
+    <div class="form-row"><label>Vincular con cliente (opcional)</label>
+      <select id="iClient"><option value="">— Sin cliente —</option></select>
+    </div>
+    <div class="form-row">
+      <label>Puntaje: <span id="iScoreVal" style="color:var(--accent-mid);font-weight:600">5</span>/10</label>
+      <input type="range" id="iScore" min="1" max="10" value="5" step="1" oninput="document.getElementById('iScoreVal').textContent=this.value">
+    </div>
+    <div class="form-row"><label>Estrellas de prioridad</label>
+      <div class="star-row" id="modalStars">
+        <span class="star on" onclick="setModalStars(1)">★</span>
+        <span class="star on" onclick="setModalStars(2)">★</span>
+        <span class="star on" onclick="setModalStars(3)">★</span>
+        <span class="star" onclick="setModalStars(4)">★</span>
+        <span class="star" onclick="setModalStars(5)">★</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('ideaModal')">Cancelar</button>
+      <button class="btn primary" onclick="saveIdea()">Guardar idea</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT MODAL -->
+<div id="clientModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3 id="clientModalTitle">Nuevo cliente</h3>
+    <div class="form-row"><label>Nombre / empresa</label><input type="text" id="cName" placeholder="Empresa SA"></div>
+    <div class="form-row"><label>Email</label><input type="email" id="cEmail" placeholder="contacto@empresa.com"></div>
+    <div class="form-row"><label>Tipo de facturación</label>
+      <select id="cType" onchange="toggleProjectFields()">
+        <option value="hourly">Por horas (soporte)</option>
+        <option value="project">Por proyecto (mensual fijo)</option>
+        <option value="both">Ambas modalidades</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Tarifa por hora ($)</label><input type="number" id="cRate" placeholder="0" min="0"></div>
+    <div id="projectFields" class="hidden">
+      <div class="form-row"><label>Nombre del proyecto</label><input type="text" id="cProject" placeholder="Desarrollo plataforma X"></div>
+      <div class="form-row"><label>Monto mensual ($)</label><input type="number" id="cProjectAmt" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-row"><label>Color</label>
+      <select id="cColor">
+        <option value="blue">Azul</option><option value="green">Verde</option>
+        <option value="amber">Naranja</option><option value="red">Rojo</option><option value="gray">Gris</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('clientModal')">Cancelar</button>
+      <button class="btn primary" onclick="saveClient()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARD MODAL -->
+<div id="cardModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Nueva tarjeta</h3>
+    <div class="form-row"><label>Título</label><input type="text" id="cardTitle" placeholder="Tarea o actividad..."></div>
+    <div class="row" style="gap:10px">
+      <div class="form-row" style="flex:1"><label>Cliente</label><select id="cardClient"><option value="">— Sin cliente —</option></select></div>
+      <div class="form-row" style="flex:1"><label>Columna</label>
+        <select id="cardCol">
+          <option value="0">Por hacer</option><option value="1">En progreso</option>
+          <option value="2">Revisión</option><option value="3">Listo</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="gap:10px">
+      <div class="form-row" style="flex:1"><label>Prioridad</label>
+        <select id="cardPrio"><option value="normal">Normal</option><option value="alta">Alta</option><option value="baja">Baja</option></select>
+      </div>
+      <div class="form-row" style="flex:1"><label>Asignado a</label><select id="cardUser"></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('cardModal')">Cancelar</button>
+      <button class="btn primary" onclick="saveCard()">Crear tarjeta</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROMOTE MODAL -->
+<div id="promoteModal" class="modal-bg hidden">
+  <div class="modal">
+    <h3>Promover idea a proyecto de cliente</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Se creará un nuevo cliente vinculado a esta idea. Podés editar los detalles luego.</p>
+    <div class="form-row"><label>Nombre del cliente / empresa</label><input type="text" id="promoteClientName"></div>
+    <div class="form-row"><label>Email de contacto</label><input type="email" id="promoteEmail" placeholder="contacto@empresa.com"></div>
+    <div class="form-row"><label>Tipo de facturación inicial</label>
+      <select id="promoteType">
+        <option value="project">Por proyecto (mensual fijo)</option>
+        <option value="hourly">Por horas</option>
+        <option value="both">Ambas modalidades</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('promoteModal')">Cancelar</button>
+      <button class="btn primary" onclick="confirmPromote()">Promover a cliente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── USERS ───────────────────────────────────────────────────────────
+const USERS = [
+  { id: 'u1', name: 'Administrador', initials: 'AD', role: 'admin', color: '#7c3aed' },
+  { id: 'u2', name: 'Usuario 2',     initials: 'U2', role: 'user',  color: '#0369a1' },
+  { id: 'u3', name: 'Usuario 3',     initials: 'U3', role: 'user',  color: '#0f766e' }
+];
+const COLORS = {
+  blue:  { bg: '#dbeafe', text: '#1d4ed8' },
+  green: { bg: '#dcfce7', text: '#15803d' },
+  amber: { bg: '#fef3c7', text: '#92400e' },
+  red:   { bg: '#fee2e2', text: '#991b1b' },
+  gray:  { bg: '#f1f5f9', text: '#475569' }
+};
+const STATUS_TAG   = { idea: 'gray', validando: 'blue', activa: 'green', pausada: 'amber' };
+const STATUS_LABEL = { idea: 'Idea', validando: 'Validando', activa: 'Activa', pausada: 'Pausada' };
+const COL_NAMES    = ['Por hacer', 'En progreso', 'Revisión', 'Listo'];
+const COL_BG       = ['#f1f5f9', '#eff6ff', '#fefce8', '#f0fdf4'];
+
+// ─── STATE ───────────────────────────────────────────────────────────
+let state = {};
+let currentUser = null;
+let ideaFilter = 'all';
+let modalStars = 3;
+let promotingIdeaId = null;
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+const STORAGE_KEY = 'propulse-v3';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+  if (!state.clients) state.clients = sampleClients();
+  if (!state.logs)    state.logs    = sampleLogs();
+  if (!state.cards)   state.cards   = sampleCards();
+  if (!state.ideas)   state.ideas   = sampleIdeas();
+  if (!state.sheetUrl) state.sheetUrl = '';
+  if (!state.sheetId)  state.sheetId  = '';
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function sampleClients() {
+  return [
+    { id:'c1', name:'TechCorp SA',  email:'info@techcorp.com',    type:'hourly',  rate:80, color:'blue'  },
+    { id:'c2', name:'StartUp XYZ', email:'hola@startup.xyz',     type:'both',    rate:60, project:'App móvil', projectAmt:2500, color:'green' },
+    { id:'c3', name:'MegaRetail',  email:'sistemas@megaretail.com', type:'project', rate:0,  project:'ERP Mensual', projectAmt:3800, color:'amber' }
+  ];
+}
+function sampleLogs() {
+  return [
+    { id:'l1', userId:'u1', clientId:'c1', desc:'Soporte servidor',     hours:2.5, date:'2025-03-20' },
+    { id:'l2', userId:'u2', clientId:'c2', desc:'Reunión planificación',hours:1,   date:'2025-03-21' },
+    { id:'l3', userId:'u1', clientId:'c1', desc:'Fix base de datos',    hours:3,   date:'2025-03-22' },
+    { id:'l4', userId:'u3', clientId:'c2', desc:'Deploy frontend',      hours:4,   date:'2025-03-23' }
+  ];
+}
+function sampleCards() {
+  return [
+    { id:'k1', title:'Actualizar docs TechCorp',    clientId:'c1', col:0, prio:'alta',   userId:'u1' },
+    { id:'k2', title:'Reunión semanal StartUp XYZ', clientId:'c2', col:1, prio:'normal', userId:'u2' },
+    { id:'k3', title:'Fix bug login MegaRetail',    clientId:'c3', col:1, prio:'alta',   userId:'u1' },
+    { id:'k4', title:'Informe mensual',             clientId:'',   col:2, prio:'normal', userId:'u3' },
+    { id:'k5', title:'Backup servidores',           clientId:'c1', col:3, prio:'baja',   userId:'u2' }
+  ];
+}
+function sampleIdeas() {
+  return [
+    { id:'i1', name:'Plataforma de cursos online',   desc:'LMS propio para vender cursos de tecnología a empresas medianas.',              status:'validando', ownerId:'u1', resources:['Diseñador UX','Servidor cloud','$800'], clientId:'',   score:8, stars:4, date:'2025-03-10' },
+    { id:'i2', name:'Servicio de monitoreo 24/7',    desc:'Monitoreo de infraestructura como servicio mensual recurrente.',                 status:'activa',    ownerId:'u1', resources:['Herramienta alertas','Docs técnicos'],   clientId:'c1', score:9, stars:5, date:'2025-03-05' },
+    { id:'i3', name:'App de turnos para PyMEs',      desc:'Aplicación simple de gestión de turnos para pequeñas empresas.',                status:'idea',      ownerId:'u2', resources:['Dev mobile','$300 MVP'],                  clientId:'',   score:6, stars:3, date:'2025-03-18' },
+    { id:'i4', name:'Consultoría de seguridad IT',   desc:'Auditorías de seguridad para empresas medianas. Ticket alto.',                   status:'pausada',   ownerId:'u3', resources:['Certificación ISO','Partner especialista'],clientId:'',   score:7, stars:3, date:'2025-02-28' }
+  ];
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const getClient = id => state.clients.find(c => c.id === id) || null;
+const getUser   = id => USERS.find(u => u.id === id) || null;
+function closeModal(id) { $(id).classList.add('hidden'); }
+
+// ─── LOGIN ───────────────────────────────────────────────────────────
+function initLogin() {
+  const ul = $('userList'); ul.innerHTML = '';
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'user-btn';
+    btn.innerHTML = `
+      <div class="ava ava-lg" style="background:${u.color}18;color:${u.color}">${u.initials}</div>
+      <div style="flex:1">
+        <div class="uname">${u.name}</div>
+        <div class="urole">${u.role === 'admin' ? 'Administrador' : 'Colaborador'}</div>
+      </div>
+      <span class="chip ${u.role}">${u.role === 'admin' ? 'Admin' : 'Usuario'}</span>`;
+    btn.onclick = () => doLogin(u);
+    ul.appendChild(btn);
+  });
+}
+function doLogin(u) {
+  currentUser = u;
+  $('loginScreen').classList.add('hidden');
+  $('mainApp').classList.remove('hidden');
+  $('currentUserName').textContent = u.name;
+  const av = $('currentAvatar');
+  av.textContent = u.initials;
+  av.style.background = u.color + '18';
+  av.style.color = u.color;
+  renderAll();
+}
+function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  currentUser = null;
+  $('loginScreen').classList.remove('hidden');
+  $('mainApp').classList.add('hidden');
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────
+function showPage(p, btn) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  $('page-' + p).classList.add('active');
+  if (btn) btn.classList.add('active');
+  const map = { dashboard: renderDashboard, ideas: renderIdeas, timer: () => { renderTimerClient(); renderTimerLogs(); }, clients: renderClients, billing: renderBilling, trello: renderTrello };
+  if (map[p]) map[p]();
+}
+function renderAll() { renderDashboard(); renderTimerClient(); renderTimerLogs(); renderClients(); renderBilling(); renderTrello(); renderIdeas(); }
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────
+function renderDashboard() {
+  const myLogs  = state.logs.filter(l => l.userId === currentUser.id);
+  const myHours = myLogs.reduce((a, l) => a + l.hours, 0);
+  const allHours = state.logs.reduce((a, l) => a + l.hours, 0);
+  let totalBill = 0;
+  state.clients.forEach(c => {
+    if (c.type === 'hourly' || c.type === 'both') {
+      const h = state.logs.filter(l => l.clientId === c.id).reduce((a, l) => a + l.hours, 0);
+      totalBill += h * (c.rate || 0);
+    }
+    if (c.type === 'project' || c.type === 'both') totalBill += (c.projectAmt || 0);
+  });
+  const activeIdeas = state.ideas.filter(i => i.status === 'activa' || i.status === 'validando').length;
+
+  $('dashMetrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Mis hs este mes</div><div class="metric-val">${myHours.toFixed(1)}h</div></div>
+    <div class="metric"><div class="metric-label">Total equipo</div><div class="metric-val">${allHours.toFixed(1)}h</div></div>
+    <div class="metric"><div class="metric-label">Facturación est.</div><div class="metric-val">$${totalBill.toLocaleString('es-AR')}</div></div>
+    <div class="metric"><div class="metric-label">Ideas en curso</div><div class="metric-val">${activeIdeas}</div><div class="metric-sub">de ${state.ideas.length} totales</div></div>`;
+
+  const recent = [...state.logs].filter(l => l.userId === currentUser.id).reverse().slice(0, 5);
+  $('recentLogs').innerHTML = recent.length
+    ? recent.map(l => {
+        const c = getClient(l.clientId);
+        return `<div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <div style="font-weight:500">${l.desc}</div>
+          <div style="color:var(--text2);font-size:12px;margin-top:2px">${c ? c.name : '—'} · ${l.hours}h · ${l.date}</div>
+        </div>`;
+      }).join('')
+    : '<span class="empty"><p>Sin registros aún</p></span>';
+
+  const topIdeas = [...state.ideas].sort((a, b) => b.score - a.score).slice(0, 4);
+  $('dashIdeas').innerHTML = topIdeas.map(idea => {
+    const sc = idea.score >= 7 ? 'score-hi' : idea.score >= 4 ? 'score-mid' : 'score-lo';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div class="score-circle ${sc}" style="width:34px;height:34px;font-size:13px">${idea.score}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${idea.name}</div>
+        <span class="tag ${STATUS_TAG[idea.status]}">${STATUS_LABEL[idea.status]}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── IDEAS ───────────────────────────────────────────────────────────
+function filterIdeas(f, btn) {
+  ideaFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderIdeas();
+}
+function renderIdeas() {
+  const sort = $('ideaSort') ? $('ideaSort').value : 'score';
+  let ideas = [...state.ideas];
+  if (ideaFilter !== 'all') ideas = ideas.filter(i => i.status === ideaFilter);
+  if (sort === 'score') ideas.sort((a, b) => b.score - a.score);
+  else if (sort === 'name') ideas.sort((a, b) => a.name.localeCompare(b.name));
+  else ideas.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const grid = $('ideasGrid');
+  if (!ideas.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="empty-ico">💡</span><p>No hay ideas en esta categoría.<br>¡Agregá la primera!</p></div>`;
+    return;
+  }
+  grid.innerHTML = ideas.map(idea => {
+    const sc = idea.score >= 7 ? 'score-hi' : idea.score >= 4 ? 'score-mid' : 'score-lo';
+    const isTop = idea.score >= 8;
+    const client = getClient(idea.clientId);
+    const owner  = getUser(idea.ownerId);
+    const stars  = Array.from({ length: 5 }, (_, i) => `<span class="star${i < idea.stars ? ' on' : ''}" style="pointer-events:none">★</span>`).join('');
+    const resources = (idea.resources || []).map(r => `<span class="resource-tag">${r}</span>`).join('');
+    return `<div class="idea-card${isTop ? ' top-idea' : ''}">
+      <div class="idea-header">
+        <div class="idea-name">${idea.name}</div>
+        <div class="score-wrap">
+          <div class="score-circle ${sc}">${idea.score}</div>
+          <div class="score-lbl">puntaje</div>
+        </div>
+      </div>
+      <div class="idea-desc">${idea.desc}</div>
+      <div class="idea-meta">
+        <span class="tag ${STATUS_TAG[idea.status]}">${STATUS_LABEL[idea.status]}</span>
+        ${client ? `<span class="tag teal">${client.name}</span>` : ''}
+        ${owner  ? `<span style="font-size:11px;color:var(--text3)">${owner.name}</span>` : ''}
+      </div>
+      ${resources ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${resources}</div>` : ''}
+      <div class="idea-footer">
+        <div class="star-row">${stars}</div>
+        <div class="idea-actions">
+          <button class="btn xs ghost" onclick="editIdea('${idea.id}')">Editar</button>
+          ${idea.status !== 'activa' ? `<button class="promote-btn" onclick="promoteIdea('${idea.id}')">Promover →</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setModalStars(n) {
+  modalStars = n;
+  document.querySelectorAll('#modalStars .star').forEach((s, i) => s.classList.toggle('on', i < n));
+}
+function openIdeaModal(id) {
+  state.editingIdea = id || null;
+  $('ideaModalTitle').textContent = id ? 'Editar idea' : 'Nueva idea';
+  $('iOwner').innerHTML = USERS.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  $('iClient').innerHTML = '<option value="">— Sin cliente —</option>' + state.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if (id) {
+    const idea = state.ideas.find(i => i.id === id);
+    $('iName').value = idea.name; $('iDesc').value = idea.desc;
+    $('iStatus').value = idea.status; $('iOwner').value = idea.ownerId;
+    $('iResources').value = (idea.resources || []).join(', ');
+    $('iClient').value = idea.clientId || '';
+    $('iScore').value = idea.score; $('iScoreVal').textContent = idea.score;
+    modalStars = idea.stars || 3;
+  } else {
+    $('iName').value = ''; $('iDesc').value = ''; $('iStatus').value = 'idea';
+    $('iResources').value = ''; $('iClient').value = '';
+    $('iScore').value = 5; $('iScoreVal').textContent = 5; modalStars = 3;
+  }
+  document.querySelectorAll('#modalStars .star').forEach((s, i) => s.classList.toggle('on', i < modalStars));
+  $('ideaModal').classList.remove('hidden');
+}
+function editIdea(id) { openIdeaModal(id); }
+function saveIdea() {
+  const name = $('iName').value.trim();
+  if (!name) { alert('Ingresá un nombre para la idea'); return; }
+  const resources = $('iResources').value.split(',').map(r => r.trim()).filter(Boolean);
+  const idea = {
+    id: state.editingIdea || 'i' + Date.now(),
+    name, desc: $('iDesc').value.trim(),
+    status: $('iStatus').value, ownerId: $('iOwner').value,
+    resources, clientId: $('iClient').value,
+    score: parseInt($('iScore').value), stars: modalStars,
+    date: new Date().toISOString().split('T')[0]
+  };
+  if (state.editingIdea) state.ideas = state.ideas.map(x => x.id === state.editingIdea ? idea : x);
+  else state.ideas.push(idea);
+  saveState(); closeModal('ideaModal'); renderIdeas(); renderDashboard();
+}
+function promoteIdea(id) {
+  promotingIdeaId = id;
+  const idea = state.ideas.find(i => i.id === id);
+  $('promoteClientName').value = idea ? idea.name : '';
+  $('promoteEmail').value = '';
+  $('promoteModal').classList.remove('hidden');
+}
+function confirmPromote() {
+  const name = $('promoteClientName').value.trim();
+  if (!name) { alert('Ingresá el nombre del cliente'); return; }
+  const idea = state.ideas.find(i => i.id === promotingIdeaId);
+  const newClient = {
+    id: 'c' + Date.now(), name,
+    email: $('promoteEmail').value.trim(),
+    type: $('promoteType').value,
+    rate: 0, project: idea ? idea.name : '', projectAmt: 0, color: 'green'
+  };
+  state.clients.push(newClient);
+  if (idea) state.ideas = state.ideas.map(i => i.id === promotingIdeaId ? { ...i, status: 'activa', clientId: newClient.id } : i);
+  saveState(); closeModal('promoteModal'); renderIdeas(); renderClients(); renderDashboard();
+  alert(`✓ "${name}" fue creado como cliente. Completá sus datos en la sección Clientes.`);
+}
+
+// ─── TIMER ───────────────────────────────────────────────────────────
+function renderTimerClient() {
+  const sel = $('timerClient'); if (!sel) return;
+  sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' + state.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+function renderTimerLogs() {
+  const logs = [...state.logs].filter(l => l.userId === currentUser.id).reverse();
+  $('timerLogs').innerHTML = logs.length
+    ? `<table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tarea</th><th>HS</th></tr></thead><tbody>
+        ${logs.map(l => { const c = getClient(l.clientId); return `<tr><td>${l.date}</td><td>${c ? c.name : '—'}</td><td>${l.desc}</td><td><strong>${l.hours}h</strong></td></tr>`; }).join('')}
+       </tbody></table>`
+    : '<p style="font-size:13px;color:var(--text2);padding:12px 0">Sin registros este mes</p>';
+}
+function toggleTimer() {
+  if (!timerRunning) {
+    if (!$('timerClient').value) { alert('Seleccioná un cliente primero'); return; }
+    timerRunning = true;
+    $('timerStartBtn').innerHTML = '⏹ Detener';
+    $('timerCard').classList.add('timer-running');
+    timerInterval = setInterval(() => { timerSeconds++; updateTimerDisplay(); }, 1000);
+  } else {
+    timerRunning = false; clearInterval(timerInterval);
+    $('timerStartBtn').innerHTML = '▶ Iniciar';
+    $('timerCard').classList.remove('timer-running');
+    if (timerSeconds > 0) saveTimerLog();
+  }
+}
+function updateTimerDisplay() {
+  const h = Math.floor(timerSeconds / 3600), m = Math.floor((timerSeconds % 3600) / 60), s = timerSeconds % 60;
+  $('timerDisplay').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function resetTimer() {
+  clearInterval(timerInterval); timerRunning = false; timerSeconds = 0;
+  updateTimerDisplay(); $('timerStartBtn').innerHTML = '▶ Iniciar';
+  $('timerCard').classList.remove('timer-running');
+}
+function saveTimerLog() {
+  const cid = $('timerClient').value;
+  const desc = $('timerDesc').value || 'Actividad sin descripción';
+  const hours = Math.round(timerSeconds / 360) / 10;
+  state.logs.push({ id: 'l' + Date.now(), userId: currentUser.id, clientId: cid, desc, hours, date: new Date().toISOString().split('T')[0] });
+  saveState(); renderTimerLogs(); renderDashboard();
+  resetTimer(); $('timerDesc').value = '';
+}
+function saveManual() {
+  const cid = $('timerClient').value;
+  if (!cid) { alert('Seleccioná un cliente'); return; }
+  const h = parseFloat($('manualHours').value) || 0;
+  const m = parseFloat($('manualMins').value) || 0;
+  const hours = Math.round((h + m / 60) * 10) / 10;
+  if (hours <= 0) { alert('Ingresá un tiempo válido'); return; }
+  const desc = $('timerDesc').value || 'Registro manual';
+  state.logs.push({ id: 'l' + Date.now(), userId: currentUser.id, clientId: cid, desc, hours, date: new Date().toISOString().split('T')[0] });
+  saveState(); renderTimerLogs(); renderDashboard();
+  $('manualHours').value = ''; $('manualMins').value = '';
+}
+
+// ─── CLIENTS ─────────────────────────────────────────────────────────
+function renderClients() {
+  $('clientsList').innerHTML = state.clients.map(c => {
+    const cl = COLORS[c.color] || COLORS.blue;
+    const h  = state.logs.filter(l => l.clientId === c.id).reduce((a, l) => a + l.hours, 0);
+    let billing = '';
+    if (c.type === 'hourly' || c.type === 'both')   billing += `<span class="tag blue">${h.toFixed(1)}h · $${(h * (c.rate || 0)).toLocaleString('es-AR')}</span> `;
+    if (c.type === 'project' || c.type === 'both')  billing += `<span class="tag green">${c.project || 'Proyecto'} · $${(c.projectAmt || 0).toLocaleString('es-AR')}/mes</span>`;
+    return `<div class="client-pill">
+      <div class="ava ava-lg" style="background:${cl.bg};color:${cl.text}">${c.name[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px">${c.name}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:7px">${c.email}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${billing}</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-shrink:0">
+        <button class="btn sm" onclick="editClient('${c.id}')">Editar</button>
+        <button class="btn sm danger" onclick="deleteClient('${c.id}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openClientModal(id) {
+  state.editingClient = id || null;
+  $('clientModalTitle').textContent = id ? 'Editar cliente' : 'Nuevo cliente';
+  if (id) {
+    const c = getClient(id);
+    $('cName').value = c.name; $('cEmail').value = c.email; $('cType').value = c.type;
+    $('cRate').value = c.rate || 0; $('cProject').value = c.project || '';
+    $('cProjectAmt').value = c.projectAmt || 0; $('cColor').value = c.color || 'blue';
+    toggleProjectFields();
+  } else {
+    $('cName').value = ''; $('cEmail').value = ''; $('cType').value = 'hourly';
+    $('cRate').value = ''; $('cProject').value = ''; $('cProjectAmt').value = '';
+    $('cColor').value = 'blue'; toggleProjectFields();
+  }
+  $('clientModal').classList.remove('hidden');
+}
+function editClient(id) { openClientModal(id); }
+function deleteClient(id) {
+  if (!confirm('¿Eliminar este cliente?')) return;
+  state.clients = state.clients.filter(c => c.id !== id);
+  saveState(); renderClients(); renderDashboard();
+}
+function toggleProjectFields() {
+  const t = $('cType').value;
+  $('projectFields').classList.toggle('hidden', t === 'hourly');
+}
+function saveClient() {
+  const name = $('cName').value.trim();
+  if (!name) { alert('Ingresá el nombre del cliente'); return; }
+  const c = {
+    id: state.editingClient || 'c' + Date.now(), name,
+    email: $('cEmail').value.trim(), type: $('cType').value,
+    rate: parseFloat($('cRate').value) || 0,
+    project: $('cProject').value.trim(),
+    projectAmt: parseFloat($('cProjectAmt').value) || 0,
+    color: $('cColor').value
+  };
+  if (state.editingClient) state.clients = state.clients.map(x => x.id === state.editingClient ? c : x);
+  else state.clients.push(c);
+  saveState(); closeModal('clientModal'); renderClients(); renderDashboard(); renderTimerClient(); renderBilling();
+}
+
+// ─── BILLING ─────────────────────────────────────────────────────────
+function renderBilling() {
+  let hsRows = '', projRows = '';
+  state.clients.forEach(c => {
+    const h = state.logs.filter(l => l.clientId === c.id).reduce((a, l) => a + l.hours, 0);
+    if (c.type === 'hourly' || c.type === 'both') {
+      const total = h * (c.rate || 0);
+      hsRows += `<tr><td>${c.name}</td><td>${h.toFixed(1)}</td><td>$${c.rate || 0}/h</td><td><strong>$${total.toLocaleString('es-AR')}</strong></td><td><span class="tag amber">Pendiente</span></td></tr>`;
+    }
+    if (c.type === 'project' || c.type === 'both') {
+      projRows += `<tr><td>${c.name}</td><td>${c.project || '—'}</td><td><strong>$${(c.projectAmt || 0).toLocaleString('es-AR')}</strong></td><td><span class="tag amber">Pendiente</span></td><td><button class="btn sm" onclick="markPaid('${c.id}')">Marcar pagado</button></td></tr>`;
+    }
+  });
+  $('billingHSTable').innerHTML   = hsRows   || '<tr><td colspan="5" style="color:var(--text3);font-style:italic;padding:14px 12px">Sin clientes por horas</td></tr>';
+  $('billingProjTable').innerHTML = projRows || '<tr><td colspan="5" style="color:var(--text3);font-style:italic;padding:14px 12px">Sin proyectos fijos</td></tr>';
+}
+function markPaid(id) {
+  if (confirm('¿Marcar como pagado?')) alert('Marcado como pagado. En producción actualiza Google Sheets automáticamente.');
+}
+
+// ─── TRELLO ──────────────────────────────────────────────────────────
+function renderTrello() {
+  const board = $('trelloBoard'); board.innerHTML = '';
+  COL_NAMES.forEach((col, idx) => {
+    const cards = state.cards.filter(c => c.col === idx);
+    const div = document.createElement('div'); div.className = 'trello-col';
+    div.innerHTML = `<div class="trello-col-head" style="background:${COL_BG[idx]}"><span>${col}</span><span class="badge">${cards.length}</span></div>`;
+    cards.forEach(card => {
+      const client = getClient(card.clientId);
+      const user   = getUser(card.userId);
+      const pTag   = card.prio === 'alta' ? '<span class="tag red">Alta</span>' : card.prio === 'baja' ? '<span class="tag gray">Baja</span>' : '';
+      const el = document.createElement('div'); el.className = 'trello-card'; el.draggable = true; el.dataset.id = card.id;
+      el.innerHTML = `<div class="trello-card-title">${card.title}</div>
+        <div class="trello-card-meta">
+          ${client ? `<span class="tag blue">${client.name}</span>` : ''}
+          ${pTag}
+          ${user ? `<span style="font-size:11px;color:var(--text3)">${user.name}</span>` : ''}
+        </div>`;
+      el.addEventListener('dragstart', e => e.dataTransfer.setData('cardId', card.id));
+      div.appendChild(el);
+    });
+    const addBtn = document.createElement('button'); addBtn.className = 'add-card-btn';
+    addBtn.textContent = '+ Agregar tarjeta';
+    addBtn.onclick = () => { $('cardCol').value = idx; openCardModal(); };
+    div.appendChild(addBtn);
+    div.addEventListener('dragover', e => e.preventDefault());
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('cardId');
+      state.cards = state.cards.map(c => c.id === id ? { ...c, col: idx } : c);
+      saveState(); renderTrello();
+    });
+    board.appendChild(div);
+  });
+}
+function openCardModal() {
+  $('cardTitle').value = '';
+  $('cardClient').innerHTML = '<option value="">— Sin cliente —</option>' + state.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  $('cardUser').innerHTML = USERS.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  $('cardPrio').value = 'normal';
+  $('cardModal').classList.remove('hidden');
+}
+function saveCard() {
+  const title = $('cardTitle').value.trim();
+  if (!title) { alert('Ingresá un título'); return; }
+  state.cards.push({ id: 'k' + Date.now(), title, clientId: $('cardClient').value, col: parseInt($('cardCol').value), prio: $('cardPrio').value, userId: $('cardUser').value });
+  saveState(); closeModal('cardModal'); renderTrello();
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────
+function exportCSV() {
+  const type = $('exportSheet').value;
+  const exports = [];
+  if (type === 'logs' || type === 'all') {
+    const rows = [['ID','Fecha','Usuario','ClienteID','Cliente','Descripción','Horas'],
+      ...state.logs.map(l => { const c = getClient(l.clientId); const u = getUser(l.userId); return [l.id, l.date, u ? u.name : '', l.clientId, c ? c.name : '', l.desc, l.hours]; })];
+    exports.push({ name: 'propulse-horas.csv', rows });
+  }
+  if (type === 'clients' || type === 'all') {
+    const rows = [['ID','Nombre','Email','Tipo','Tarifa','Proyecto','MontoProyecto','Color'],
+      ...state.clients.map(c => [c.id, c.name, c.email, c.type, c.rate, c.project || '', c.projectAmt || 0, c.color])];
+    exports.push({ name: 'propulse-clientes.csv', rows });
+  }
+  if (type === 'ideas' || type === 'all') {
+    const rows = [['ID','Nombre','Descripción','Estado','Responsable','Recursos','ClienteID','Puntaje','Estrellas','Fecha'],
+      ...state.ideas.map(i => { const u = getUser(i.ownerId); return [i.id, i.name, i.desc, i.status, u ? u.name : '', (i.resources || []).join('; '), i.clientId || '', i.score, i.stars, i.date]; })];
+    exports.push({ name: 'propulse-ideas.csv', rows });
+  }
+  exports.forEach(exp => {
+    const csv = exp.rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = exp.name; a.click();
+  });
+}
+function saveSheetConfig() {
+  state.sheetUrl = $('sheetUrl').value.trim();
+  state.sheetId  = $('sheetId').value.trim();
+  saveState();
+  $('connectionStatus').innerHTML = '<span style="color:var(--accent-mid)">✓ Configuración guardada</span>';
+}
+async function testConnection() {
+  const url = $('sheetUrl').value.trim();
+  if (!url) { alert('Ingresá primero la URL del Web App'); return; }
+  $('connectionStatus').innerHTML = '<span style="color:var(--text3)">Probando conexión...</span>';
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.ok) $('connectionStatus').innerHTML = '<span style="color:var(--accent-mid)">✓ Conexión exitosa con Google Sheets</span>';
+    else throw new Error(data.error);
+  } catch(e) {
+    $('connectionStatus').innerHTML = `<span style="color:var(--danger)">✗ Error: ${e.message}</span>`;
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+loadState();
+initLogin();
+if (state.sheetUrl) { $('sheetUrl').value = state.sheetUrl; }
+if (state.sheetId)  { $('sheetId').value  = state.sheetId;  }
+</script>
+</body>
+</html>
