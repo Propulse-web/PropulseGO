@@ -1,0 +1,316 @@
+<!--
+══════════════════════════════════════════════════════════════════
+ CAMBIOS EN index.html — 4 pasos
+══════════════════════════════════════════════════════════════════
+
+ PASO 1 · Nav: borrá el botón duplicado. Dejá SOLO este:
+   <button class="nav-btn" id="diag-nav-btn" onclick="go('diagnostico',this)">🧠 Diagnóstico IA</button>
+
+ PASO 2 · HTML: tu archivo tiene DOS <div id="page-diagnostico"> (con ids
+   repetidos adentro: diag-messages, diag-chat-view, etc.). Borrá AMBOS
+   bloques completos y el modal <div id="m-diag-context">…</div>.
+   Pegá en su lugar el BLOQUE A de abajo.
+
+ PASO 3 · JS: borrá todo desde
+     // DIAGNÓSTICO IA
+   hasta justo antes de
+     // ── USER MANAGEMENT
+   (incluye callDiagAI, GEMINI_API_KEY, testGeminiKey, renderBrochure, etc.)
+   y pegá en su lugar el contenido del BLOQUE B (sin las etiquetas <script>).
+
+ PASO 4 · Sesión de Supabase (el token vence cada 1 hora):
+   a) En setupRoleUI(), borrá esta línea para que los clientes vean Diagnóstico:
+        document.getElementById('diag-nav-btn').style.display='none';
+   b) En $auth.login, reemplazá el localStorage.setItem(...) por:
+        localStorage.setItem('pp_sb_session', JSON.stringify({access_token: token, refresh_token: data.refresh_token, expires_at: data.expires_at, email: userObj.email, uid: userObj.id}));
+   c) En $auth.register, dentro de if(data.access_token){...}, reemplazá el setItem por:
+        localStorage.setItem('pp_sb_session', JSON.stringify({access_token: token, refresh_token: data.refresh_token, expires_at: data.expires_at, email: userObj.email, uid: userObj.id, name}));
+-->
+
+
+<!-- ═══════════════════════ BLOQUE A · HTML ═══════════════════════ -->
+<div id="page-diagnostico" class="page">
+  <style>
+    .diag-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start}
+    .diag-err{align-self:center;font-size:12px;color:var(--red);background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:8px 12px}
+    @media(max-width:760px){.diag-grid{grid-template-columns:1fr}}
+  </style>
+
+  <!-- LISTA DE SESIONES -->
+  <div id="diag-list-view">
+    <div class="ph">
+      <h2>🧠 Diagnóstico IA</h2>
+      <button class="btn primary" onclick="startNewDiag()">+ Nueva consulta</button>
+    </div>
+    <div id="diag-sessions-list"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="diag-chat-view" class="hidden">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <button class="btn sm" onclick="closeDiagChat()">← Volver</button>
+      <h2 style="font-size:18px;font-weight:700;flex:1" id="diag-chat-title">Nueva consulta</h2>
+    </div>
+    <div class="diag-grid">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="diag-messages" style="height:480px;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px"></div>
+        <div style="border-top:1px solid var(--border);padding:14px;display:flex;gap:8px">
+          <textarea id="diag-input" placeholder="Contanos tu proceso o respondé la pregunta..." style="flex:1;min-height:60px;resize:none;font-size:13px"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendDiagMsg();}"></textarea>
+          <button class="btn primary" onclick="sendDiagMsg()" id="diag-send-btn" style="align-self:flex-end;padding:10px 16px">Enviar</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card diag-progress-card">
+          <div class="sect">Progreso del diagnóstico</div>
+          <div id="diag-steps-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="card" id="diag-brochure-preview" style="display:none">
+          <div class="sect">Propuesta lista</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px">El diagnóstico está completo.</p>
+          <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="showBrochure()">👁 Ver brochure</button>
+          <button class="btn" style="width:100%" onclick="printBrochure()">📄 Descargar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROCHURE -->
+  <div id="diag-brochure-view" class="hidden">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap">
+      <button class="btn sm" onclick="closeBrochure()">← Volver al chat</button>
+      <h2 style="font-size:18px;font-weight:700;flex:1">Propuesta de automatización</h2>
+      <button class="btn primary" onclick="printBrochure()">📄 Descargar PDF</button>
+    </div>
+    <div id="diag-brochure-content"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════ BLOQUE B · JS ═══════════════════════ -->
+<script>
+// ══════════════════════════════════════════════════════════
+// DIAGNÓSTICO IA — vía backend n8n (la API key vive en n8n)
+// ══════════════════════════════════════════════════════════
+const N8N_DIAG_URL = 'https://new.automatizar.work/webhook/propulse-diagnostico';
+
+const DIAG_STEPS = [
+  {id:'proceso',   label:'Descripción del proceso'},
+  {id:'volumen',   label:'Volumen y frecuencia'},
+  {id:'sistemas',  label:'Sistemas actuales'},
+  {id:'problemas', label:'Puntos de dolor'},
+  {id:'objetivo',  label:'Objetivo de la automatización'},
+  {id:'brochure',  label:'Propuesta generada'}
+];
+const DIAG_GREETING = '¡Hola! Soy el asistente de diagnóstico de ProPulse. 👋\n\nTe voy a hacer algunas preguntas para entender tu proceso y recomendarte qué podemos automatizar.\n\n¿Me contás brevemente **de qué se trata el proceso o área** que querés mejorar?';
+
+let curDiagId=null, diagMessages=[], diagCurrentStep=0, diagBrochure=null, diagSending=false;
+
+// ── Sesiones (localStorage, separadas por usuario) ────────
+function diagKey(){ return 'pp_diag_sessions_'+(CU?.uid||'anon'); }
+function getDiagLocalSessions(){ try{return JSON.parse(localStorage.getItem(diagKey())||'[]');}catch(e){return[];} }
+function saveDiagLocalSession(s){
+  const all=getDiagLocalSessions(); const i=all.findIndex(x=>x.id===s.id);
+  if(i>=0)all[i]=s; else all.push(s);
+  localStorage.setItem(diagKey(),JSON.stringify(all));
+}
+function currentDiagSession(){ return getDiagLocalSessions().find(s=>s.id===curDiagId); }
+function persistDiag(){
+  const s=currentDiagSession(); if(!s)return;
+  Object.assign(s,{messages:diagMessages,msgs:diagMessages.length,step:diagCurrentStep,brochure:diagBrochure});
+  saveDiagLocalSession(s);
+}
+function deleteDiagSession(id){
+  if(!confirm('¿Eliminar esta consulta?'))return;
+  localStorage.setItem(diagKey(),JSON.stringify(getDiagLocalSessions().filter(s=>s.id!==id)));
+  renderDiagSessions();
+}
+
+// ── Vistas ────────────────────────────────────────────────
+function showDiagView(v){
+  $('diag-list-view').classList.toggle('hidden',v!=='list');
+  $('diag-chat-view').classList.toggle('hidden',v!=='chat');
+  $('diag-brochure-view').classList.toggle('hidden',v!=='brochure');
+}
+function renderDiagnostico(){ showDiagView('list'); renderDiagSessions(); }
+function renderDiagSessions(){
+  const el=$('diag-sessions-list'); if(!el)return;
+  const sessions=getDiagLocalSessions().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!sessions.length){
+    el.innerHTML='<div class="empty"><span class="empty-ico">🧠</span><p>Todavía no hay consultas.<br>Empezá una nueva y te recomendamos qué automatizar.</p></div>';
+    return;
+  }
+  el.innerHTML=sessions.map(s=>`
+    <div class="auto-admin-card">
+      <div style="width:42px;height:42px;border-radius:10px;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🧠</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700;margin-bottom:2px">${esc(s.clientName||'Cliente')}</div>
+        <div style="font-size:12px;color:var(--text3)">${s.date?new Date(s.date).toLocaleDateString('es-AR'):''} · ${s.msgs||0} mensajes</div>
+        <div style="font-size:12px;margin-top:4px">${s.brochure?'<span style="color:var(--green);font-weight:600">✓ Propuesta generada</span>':'<span style="color:var(--amber)">En progreso</span>'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn sm" onclick="resumeDiag('${s.id}')">Continuar</button>
+        <button class="btn sm danger" onclick="deleteDiagSession('${s.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function startNewDiag(){
+  const name=(prompt(isClient()?'Nombre de tu empresa:':'Nombre del cliente o empresa:')||'').trim();
+  if(!name)return;
+  curDiagId=uid(); diagMessages=[]; diagCurrentStep=0; diagBrochure=null;
+  saveDiagLocalSession({id:curDiagId,clientName:name,date:new Date().toISOString(),msgs:0,brochure:null,messages:[]});
+  openDiagChat(name);
+  addDiagMsg('ai',DIAG_GREETING);
+}
+function resumeDiag(id){
+  const s=getDiagLocalSessions().find(x=>x.id===id); if(!s)return;
+  curDiagId=id; diagMessages=s.messages||[]; diagCurrentStep=s.step||0; diagBrochure=s.brochure||null;
+  openDiagChat(s.clientName);
+}
+function openDiagChat(name){
+  showDiagView('chat');
+  $('diag-chat-title').textContent='🧠 '+name;
+  $('diag-brochure-preview').style.display=diagBrochure?'block':'none';
+  renderDiagSteps(); renderDiagMessages();
+  setTimeout(()=>$('diag-input')?.focus(),50);
+}
+function closeDiagChat(){ renderDiagnostico(); }
+
+// ── Render chat ───────────────────────────────────────────
+function renderDiagSteps(){
+  const el=$('diag-steps-list'); if(!el)return;
+  el.innerHTML=DIAG_STEPS.map((s,i)=>{
+    const st=i<diagCurrentStep?'done':i===diagCurrentStep?'active':'pending';
+    return `<div class="diag-step ${st}"><div class="diag-step-dot ${st}"></div><div class="diag-step-lbl">${s.label}</div></div>`;
+  }).join('');
+}
+const fmtDiag=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+function addDiagMsg(role,text){
+  diagMessages.push({role,text,ts:new Date().toISOString()});
+  renderDiagMessages(); persistDiag();
+}
+function renderDiagMessages(){
+  const el=$('diag-messages'); if(!el)return;
+  el.innerHTML=diagMessages.map(m=>`
+    <div class="msg ${m.role==='user'?'user':'ai'}">
+      <div class="msg-who">${m.role==='user'?'Vos':'🤖 ProPulse IA'}</div>
+      <div class="msg-bubble">${fmtDiag(m.text)}</div>
+    </div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function showDiagError(text){
+  const el=$('diag-messages'); if(!el)return;
+  const d=document.createElement('div'); d.className='diag-err'; d.textContent=text;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+// ── Token de Supabase siempre vigente ─────────────────────
+async function getValidToken(){
+  let s; try{ s=JSON.parse(localStorage.getItem('pp_sb_session')||'{}'); }catch(e){ return null; }
+  if(!s.access_token) return null;
+  const now=Math.floor(Date.now()/1000);
+  if(!s.refresh_token || (s.expires_at && s.expires_at-now>60)) return s.access_token;
+  const res=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{
+    method:'POST', headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body:JSON.stringify({refresh_token:s.refresh_token})
+  });
+  if(!res.ok) return null;
+  const d=await res.json();
+  localStorage.setItem('pp_sb_session',JSON.stringify({...s,access_token:d.access_token,refresh_token:d.refresh_token,expires_at:d.expires_at}));
+  if(CU) CU.access_token=d.access_token;   // también lo usa el módulo de DB
+  return d.access_token;
+}
+
+// ── Llamada al backend n8n ────────────────────────────────
+async function callDiagAI(){
+  const token=await getValidToken();
+  if(!token) throw new Error('SESSION');
+  const res=await fetch(N8N_DIAG_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body:JSON.stringify({
+      clientName: currentDiagSession()?.clientName||'',
+      messages: diagMessages.map(m=>({role:m.role,text:m.text}))
+    })
+  });
+  if(res.status===401) throw new Error('SESSION');
+  let data; try{ data=await res.json(); }catch(e){ throw new Error('Respuesta inválida del servidor ('+res.status+')'); }
+  if(!res.ok||!data.ok) throw new Error(data.error||('Error '+res.status));
+  return data; // { ok, reply, brochure }
+}
+
+async function sendDiagMsg(){
+  if(diagSending)return;
+  const input=$('diag-input'); const text=input.value.trim(); if(!text)return;
+  input.value=''; addDiagMsg('user',text);
+  diagSending=true; $('diag-send-btn').disabled=true;
+  const typing=document.createElement('div');
+  typing.className='msg ai'; typing.id='diag-typing';
+  typing.innerHTML='<div class="msg-who">🤖 ProPulse IA</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  $('diag-messages').appendChild(typing); $('diag-messages').scrollTop=$('diag-messages').scrollHeight;
+  try{
+    const {reply,brochure}=await callDiagAI();
+    $('diag-typing')?.remove();
+    if(brochure){
+      diagBrochure=brochure; diagCurrentStep=DIAG_STEPS.length-1;
+      addDiagMsg('ai',reply);
+      showBrochureCard();
+    } else {
+      addDiagMsg('ai',reply);
+      diagCurrentStep=Math.min(diagMessages.filter(m=>m.role==='user').length, DIAG_STEPS.length-2);
+    }
+    persistDiag(); renderDiagSteps();
+  }catch(e){
+    $('diag-typing')?.remove();
+    // Sacamos el mensaje del historial y lo devolvemos al input para reintentar sin duplicar
+    diagMessages.pop(); persistDiag(); renderDiagMessages(); input.value=text;
+    if(e.message==='SESSION') showDiagError('Tu sesión venció. Cerrá sesión y volvé a ingresar.');
+    else showDiagError('No pudimos conectar con el servicio de diagnóstico. Probá de nuevo en unos segundos.');
+    console.error('Diag error:',e);
+  }finally{
+    diagSending=false; $('diag-send-btn').disabled=false; input.focus();
+  }
+}
+
+// ── Brochure ──────────────────────────────────────────────
+function showBrochureCard(){ const c=$('diag-brochure-preview'); if(c)c.style.display='block'; }
+function showBrochure(){
+  if(!diagBrochure){alert('Todavía no hay propuesta generada.');return;}
+  showDiagView('brochure'); renderBrochure(diagBrochure);
+}
+function closeBrochure(){ showDiagView('chat'); }
+function renderBrochure(b){
+  const imp=v=>({alta:'alta',media:'media',baja:'baja'}[String(v||'').toLowerCase()]||'media');
+  const opps=(b.oportunidades||[]).map(o=>`
+    <div class="br-opp">
+      <h3>${esc(o.titulo)}</h3>
+      <p>${esc(o.descripcion)}</p>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+        <span class="br-tag br-impact-${imp(o.impacto)}">Impacto ${imp(o.impacto)}</span>
+        ${(o.herramientas||[]).map(h=>`<span class="br-tag" style="background:var(--accent-light);color:var(--accent);border:1px solid rgba(79,70,229,.2)">${esc(h)}</span>`).join('')}
+        ${o.ahorro?`<span style="font-size:11px;color:var(--text3);margin-left:4px">⏱ ${esc(o.ahorro)}</span>`:''}
+      </div>
+    </div>`).join('');
+  const row=(ico,col,t)=>`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)"><span style="color:var(--${col})">${ico}</span> ${esc(t)}</div>`;
+  const problemas=(b.problemas||[]).map(p=>row('✗','red',p)).join('');
+  const beneficios=(b.beneficios||[]).map(p=>row('✓','green',p)).join('');
+  const pasos=(b.proximos_pasos||[]).map((p,i)=>`<div class="br-next-step"><div class="br-step-n">${i+1}</div><div style="font-size:13px;color:var(--text2);padding-top:4px;line-height:1.6">${esc(p)}</div></div>`).join('');
+  $('diag-brochure-content').innerHTML=`
+    <div class="br-header">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;opacity:.7;margin-bottom:8px;text-transform:uppercase">Propuesta de automatización</div>
+      <h1>${esc(b.empresa)}</h1>
+      <p>${esc(b.proceso)}</p>
+      <div style="margin-top:16px;font-size:12px;opacity:.6">Generado el ${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+    </div>
+    ${problemas?`<div class="br-section"><h2>⚠️ Problemas identificados</h2>${problemas}</div>`:''}
+    <div class="br-section"><h2>🚀 Qué podemos hacer por vos</h2>${opps||'<p style="color:var(--text3);font-size:13px">Sin oportunidades detectadas</p>'}</div>
+    ${beneficios?`<div class="br-section"><h2>✅ Beneficios esperados</h2>${beneficios}</div>`:''}
+    ${pasos?`<div class="br-section"><h2>📋 Próximos pasos</h2>${pasos}</div>`:''}
+    <div style="text-align:center;padding:24px;color:var(--text3);font-size:12px;border-top:1px solid var(--border);margin-top:20px">ProPulse · Diagnóstico de Automatización</div>`;
+}
+function printBrochure(){
+  if(!diagBrochure){alert('Todavía no hay propuesta generada.');return;}
+  if($('diag-brochure-view').classList.contains('hidden')){ showBrochure(); setTimeout(()=>window.print(),300); }
+  else window.print();
+}
+</script>
